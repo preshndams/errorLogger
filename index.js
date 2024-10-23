@@ -1,4 +1,5 @@
 import ErrorLogger from './ErrorLogger.js';
 import logger from './logger.js';
+import appConfig from './appConfig.js';
 
-export { ErrorLogger, logger };
+export { appConfig, ErrorLogger, logger };
