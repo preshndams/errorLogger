@@ -26,7 +26,7 @@ const prettyPrintConfig = {
     ...logging.prettyPrint
 };
 
-const { logFolder, httpConfig, logStreams, customLevels } = loggingConfig;
+const { logFolder, httpConfig, logStreams = [], customLevels } = loggingConfig;
 const logLevel = loggingConfig.level || 'info';
 const streams = []
 

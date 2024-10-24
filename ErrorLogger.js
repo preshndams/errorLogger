@@ -65,7 +65,7 @@ class ErrorLogger {
         const remappedStack = this.reMapStackWithSourceCode(stack, 'source');
 
         if (!httpConfig.url) {
-            logger.clienterror({ err: { stack: remappedStack } }, "Got error from client side");
+            logger.clienterror({ err: { stack: remappedStack } }, "Client-side error: An issue occurred while processing the request.");
         } else {
             const logData = {
                 req: { ...req, headers: req.headers, body: {} },
@@ -76,9 +76,7 @@ class ErrorLogger {
             req.log.error(logData);
             res.status(200).send('Mail Sent');
         }
-
         return true;
-
     }
 }
 
