@@ -61,16 +61,15 @@ class ErrorLogger {
     }
 
     static async execute(req, res) {
-        const { fileName, stack, rawUrl } = req.body;
+        const { appName, stack } = { ...req.body, ...req.query, ...req.params };
         const remappedStack = this.reMapStackWithSourceCode(stack, 'source');
-
         if (!httpConfig.url) {
             logger.clienterror({ err: { stack: remappedStack } }, "Client-side error: An issue occurred while processing the request.");
         } else {
             const logData = {
                 req: { ...req, headers: req.headers, body: {} },
                 err: { stack: remappedStack },
-                machineName: UiAppName[fileName.toLowerCase() || ''],
+                machineName: appName.toLowerCase() || '',
                 rawUrl
             };
             req.log.error(logData);
@@ -78,6 +77,7 @@ class ErrorLogger {
         }
         return true;
     }
+}
 }
 
 export default ErrorLogger;
