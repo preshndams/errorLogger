@@ -22,6 +22,10 @@ This repository contains a common error logging solution built with Pino, design
     "logging": {
         "stdout": true,
         "level": "info",
+        "customLevels": {
+            "slow": 35,
+            "clienterror": 70
+        },
         "logStreams": [
             {
                 "stream": "main",
@@ -39,22 +43,20 @@ This repository contains a common error logging solution built with Pino, design
                 "logLevel": "clienterror"
             }
         ],
-        "httpConfig": {
-            "url": "http://localhost:3000/data",
-            "headers": {
-            }
-        },
-        "prettyPrint": {
-            "colorize": false,
-            "levelFirst": true,
-            "ignore": "pid,hostname",
-            "translateTime": "SYS:h:MM:ss TT Z o",
-            "messageFormat": "Message - {msg}"
-        },
-        "customLevels": {
-            "slow": 35,
-            "clienterror": 70
-1       }
+    },
+     "httpConfig": {
+        "url": "http://localhost:3000/data",
+        "headers": {
+          "MachineName": "",
+          "SystemPath": ""
+        }
+      },
+    "prettyPrint": {
+        "colorize": false,
+        "levelFirst": true,
+        "ignore": "pid,hostname",
+        "translateTime": "SYS:h:MM:ss TT Z o",
+        "messageFormat": "Message - {msg}"
     }
 }
 ```
@@ -74,3 +76,16 @@ Configures how logs are formatted for human readability. Options include coloriz
 
 ### customLevels:
 Defines custom log levels (slow, clienterror) with their respective numeric values. These are used in addition to standard log levels (e.g., info, error).
+
+### Souce Mapping for Frontend Error (ErrorMapper.js)
+
+We have another utility for frontend error source mapping. We mainly use three methods to map frontend errors in Error.
+
+1. We have init() method, it reads the mapping file and creates a mapping object.
+```
+ErrorMapper.init({ filePath: './client/static/js' });
+```
+2. We have execute() method, it takes the request and response objects and maps the frontend error.
+```
+ErrorMapper.execute(req, res);
+```

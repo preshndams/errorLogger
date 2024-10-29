@@ -11,7 +11,7 @@ const readConfig = function (configFiles) {
     return config;
 };
 
-const appConfig = readConfig(['./config.json', './config.local.json', 'logger.config.json']);
+const appConfig = readConfig([ 'logger.config.json', 'logger.config.local.json']);
 
 export { readConfig };
 export default appConfig;

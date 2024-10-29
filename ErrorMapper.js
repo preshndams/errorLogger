@@ -7,10 +7,20 @@ import path from 'path';
 const { logging = {}, UiAppName } = config;
 const { httpConfig } = logging || {};
 
-class ErrorLogger {
+class ErrorMapper {
 
     static _sourceMap = { source: null };
 
+    /**
+     * Initializes the source map for the frontend build if a valid file path is provided.
+     * It reads the specified directory to find the source map file matching the pattern "main.*.js.map",
+     * loads its contents, and assigns the parsed JSON data to the `_sourceMap.source` property.
+     * Logs an error if reading the source mapping file fails.
+     *
+     * @param {Object} options - The initialization options.
+     * @param {string} options.filePath - The path to the directory containing the source map file.
+     * @returns {Promise<void>} - Resolves with no return value; logs an error if any issues occur.
+     */
     static async init({ filePath }) {
         if (!filePath) {
             return;
@@ -29,6 +39,15 @@ class ErrorLogger {
         }
     }
 
+    /**
+     * Remaps a stack trace using source maps to provide original file names, line numbers, 
+     * and column numbers from the source code. This function uses SourceMapConsumer to 
+     * convert transpiled stack traces back to their original source locations, making debugging easier.
+     *
+     * @param {string} stack - The error stack trace from the frontend, typically from a minified build.
+     * @param {string} file - The filename or key associated with the source map.
+     * @returns {string} - The remapped stack trace with source code locations.
+     */
     static reMapStackWithSourceCode(stack, file) {
         if (!this._sourceMap[file]) {
             return stack;
@@ -60,6 +79,18 @@ class ErrorLogger {
         }
     }
 
+    /**
+     * Handles client-side error logging and response in case of frontend build errors.
+     * - Extracts app name and error stack from request body, query, or parameters.
+     * - Uses source map to remap stack trace for improved traceability (file name/line number).
+     * - Logs client error details, either to an external logging service or locally, 
+     *   depending on configuration.
+     * - Sends a confirmation response to the client after logging.
+     *
+     * @param {Object} req - The HTTP request object containing error details from the frontend.
+     * @param {Object} res - The HTTP response object for sending back confirmation to the client.
+     * @returns {boolean} - Returns true if the error was successfully logged.
+     */
     static async execute(req, res) {
         const { appName, stack } = { ...req.body, ...req.query, ...req.params };
         const remappedStack = this.reMapStackWithSourceCode(stack, 'source');
@@ -78,6 +109,6 @@ class ErrorLogger {
         return true;
     }
 }
-}
 
-export default ErrorLogger;
+
+export default ErrorMapper;
