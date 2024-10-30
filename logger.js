@@ -3,10 +3,21 @@ import rfs from 'file-stream-rotator';
 import pino, { multistream } from 'pino';
 import pretty from 'pino-pretty';
 import { createWriteStream } from './pino-http-send.js';
-import appConfig from './appConfig.js';
 import path from 'path';
 
 class Logger {
+    static readConfig(configFiles) {
+        const config = {};
+
+        configFiles.forEach((file) => {
+            if (fs.existsSync(file)) {
+                const fileData = fs.readFileSync(file, 'utf-8');
+                Object.assign(config, JSON.parse(fileData));
+            }
+        });
+        return config;
+    };
+
     createConfig = (config) => {
         const { prettyPrint, httpConfig, logging = {} } = config || appConfig;
 
@@ -39,7 +50,17 @@ class Logger {
         };
     }
 
-    createInstance = (config) => {
+    /**
+     * 
+     * @param {*} config Array of config files to read config from, or configuration. If empty, defaults to config from logger.config.json and logger.config.local.json
+     * @returns {Object} pino-logger
+     */
+    constructor(config) {
+        if (!config) {
+            config = Logger.readConfig(['./logger.config.json', './logger.config.local.json']);
+        } else if (Array.isArray(config)) {
+            config = Logger.readConfig(config);
+        }
         const { httpConfig, loggingConfig, prettyPrintConfig } = this.createConfig(config);
         const { logFolder, logStreams = [], customLevels } = loggingConfig;
         const logLevel = loggingConfig.level || 'info';
@@ -54,18 +75,6 @@ class Logger {
             audit_file: path.join(logFolder, 'audit.json'),
         };
 
-        function getPrettyStream(destination, level) {
-            return {
-                level,
-                stream: pretty({
-                    ...prettyPrintConfig,
-                    destination: fs.createWriteStream(destination, { flags: 'a' }),  // File-based pretty logs
-                    customLevels: customLevels
-                }),
-            };
-        }
-
-
         if (!fs.existsSync(logFolder)) {
             fs.mkdirSync(logFolder);
         }
@@ -77,11 +86,26 @@ class Logger {
             }
             // Create a pretty stream for each log file stream
             const logFileStream = rfs.getStream({ ...fileStreamConfigDefaults, ...stream });
-            streams.push(getPrettyStream(logFileStream.fs.path, stream.logLevel));
+            streams.push({
+                level: stream.logLevel,
+                stream: pretty({
+                    ...prettyPrintConfig,
+                    destination: fs.createWriteStream(logFileStream.fs.path, { flags: 'a' }),  // File-based pretty logs
+                    customLevels
+                })
+            });
         }
 
         if (loggingConfig.stdout !== false) {
-            streams.push({ level: logLevel, stream: pretty({ ...prettyPrintConfig, destination: process.stdout, customLevels: customLevels, colorize: true }) });
+            streams.push({
+                level: logLevel,
+                stream: pretty({
+                    ...prettyPrintConfig,
+                    destination: process.stdout,
+                    customLevels: customLevels,
+                    colorize: true
+                })
+            });
         }
 
         if (httpConfig.url) {
@@ -102,7 +126,5 @@ class Logger {
     }
 }
 
-const logger = new Logger();
-
-export { Logger };
-export default logger;
+export const logger = new Logger();
+export default Logger;

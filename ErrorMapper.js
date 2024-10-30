@@ -1,15 +1,13 @@
-import config from './appConfig.js';
+// import config from './appConfig.js';
 import { SourceMapConsumer } from 'source-map-js';
 import fs from 'fs';
-import logger from './logger.js';
+import Logger from './logger.js';
 import path from 'path';
-
-const { logging = {}, UiAppName } = config;
-const { httpConfig } = logging || {};
 
 class ErrorMapper {
 
     static _sourceMap = { source: null };
+    static logger = new Logger();
 
     /**
      * Initializes the source map for the frontend build if a valid file path is provided.
@@ -35,7 +33,7 @@ class ErrorMapper {
                 this._sourceMap.source = JSON.parse(fileData);
             }
         } catch (error) {
-            logger.error({ err: error }, "Error while reading the source mapping file");
+            this.logger.error({ err: error }, "Error while reading the source mapping file");
         }
     }
 
@@ -92,9 +90,10 @@ class ErrorMapper {
      * @returns {boolean} - Returns true if the error was successfully logged.
      */
     static async execute(req, res) {
+        const config = this.logger.createConfig();
         const { appName, stack } = { ...req.body, ...req.query, ...req.params };
         const remappedStack = this.reMapStackWithSourceCode(stack, 'source');
-        if (!httpConfig.url) {
+        if (!config.httpConfig.url) {
             logger.clienterror({ err: { stack: remappedStack } }, "Client-side error: An issue occurred while processing the request.");
         } else {
             const logData = {

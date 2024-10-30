@@ -1,4 +1,4 @@
 import ErrorMapper from './ErrorMapper.js';
-import logger from './logger.js';
+import Logger from './logger.js';
 
-export { ErrorMapper, logger };
+export { ErrorMapper, Logger };
