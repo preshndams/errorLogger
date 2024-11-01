@@ -7,7 +7,6 @@ import path from 'path';
 class ErrorMapper {
 
     static _sourceMap = { source: null };
-    static logger = new Logger();
 
     /**
      * Initializes the source map for the frontend build if a valid file path is provided.
@@ -20,6 +19,7 @@ class ErrorMapper {
      * @returns {Promise<void>} - Resolves with no return value; logs an error if any issues occur.
      */
     static async init({ filePath }) {
+        const logger = new Logger();
         if (!filePath) {
             return;
         }
@@ -33,7 +33,7 @@ class ErrorMapper {
                 this._sourceMap.source = JSON.parse(fileData);
             }
         } catch (error) {
-            this.logger.error({ err: error }, "Error while reading the source mapping file");
+            logger.error({ err: error }, "Error while reading the source mapping file");
         }
     }
 
@@ -90,10 +90,11 @@ class ErrorMapper {
      * @returns {boolean} - Returns true if the error was successfully logged.
      */
     static async execute(req, res) {
-        const config = this.logger.createConfig();
+        const logger = new Logger();
+        // const config = logger.readConfig();
         const { appName, stack } = { ...req.body, ...req.query, ...req.params };
         const remappedStack = this.reMapStackWithSourceCode(stack, 'source');
-        if (!config.httpConfig.url) {
+        if (true) {
             logger.clienterror({ err: { stack: remappedStack } }, "Client-side error: An issue occurred while processing the request.");
         } else {
             const logData = {
