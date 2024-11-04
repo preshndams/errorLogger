@@ -87,7 +87,7 @@ class Logger {
             // Create a pretty stream for each log file stream
             const logFileStream = rfs.getStream({ ...fileStreamConfigDefaults, ...stream });
             streams.push({
-                level: stream.logLevel,
+                level: stream.stream === "main" ? logLevel : stream.logLevel, //Added this condition here to validate the other level like info, debug, warn etc in the main stream.
                 stream: pretty({
                     ...prettyPrintConfig,
                     destination: fs.createWriteStream(logFileStream.fs.path, { flags: 'a' }),  // File-based pretty logs
