@@ -62,7 +62,7 @@ class Logger {
             config = Logger.readConfig(config);
         }
         const { httpConfig, loggingConfig, prettyPrintConfig } = this.createConfig(config);
-        const { logFolder, logStreams = [], customLevels } = loggingConfig;
+        const { logFolder, logStreams = [], customLevels, showErrorsInMainStream = []} = loggingConfig;
         const logLevel = loggingConfig.level || 'info';
         const streams = []
 
@@ -84,16 +84,25 @@ class Logger {
             if (logLevel === 'error' && stream.stream === "main") {
                 continue;
             }
+
             // Create a pretty stream for each log file stream
             const logFileStream = rfs.getStream({ ...fileStreamConfigDefaults, ...stream });
             streams.push({
-                level: stream.stream === "main" ? logLevel : stream.logLevel, //Added this condition here to validate the other level like info, debug, warn etc in the main stream.
+                level: stream.stream === "error" ? stream.logLevel : logLevel, //Added this condition here to validate the other level like info, debug, warn etc in the main stream.
                 stream: pretty({
                     ...prettyPrintConfig,
                     destination: fs.createWriteStream(logFileStream.fs.path, { flags: 'a' }),  // File-based pretty logs
                     customLevels
                 })
             });
+
+              //Including the errors in the main stream based on the other log level like info, debug, warn etc.
+              if (showErrorsInMainStream.includes(logLevel) && stream.stream === "main") {
+                streams.push({
+                    level: 'error',
+                    stream: streams[streams.length - 1].stream  // Reuse the same stream configuration
+                });
+            }
         }
 
         if (loggingConfig.stdout !== false) {
@@ -106,6 +115,12 @@ class Logger {
                     colorize: true
                 })
             });
+            if (logLevel !== 'error') {
+                streams.push({
+                    level: 'error',
+                    stream: streams[streams.length - 1].stream  // Reuse the same stream configuration
+                });
+            }
         }
 
         if (httpConfig.url) {
