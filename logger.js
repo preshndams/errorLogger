@@ -62,7 +62,7 @@ class Logger {
             config = Logger.readConfig(config);
         }
         const { httpConfig, loggingConfig, prettyPrintConfig } = this.createConfig(config);
-        const { logFolder, logStreams = [], customLevels, showErrorsInMainStream = []} = loggingConfig;
+        const { logFolder, logStreams = [], customLevels, showErrorsInMainStream = [] } = loggingConfig;
         const logLevel = loggingConfig.level || 'info';
         const streams = []
 
@@ -96,8 +96,8 @@ class Logger {
                 })
             });
 
-              //Including the errors in the main stream based on the other log level like info, debug, warn etc.
-              if (showErrorsInMainStream.includes(logLevel) && stream.stream === "main") {
+            //Including the errors in the main stream based on the other log level like info, debug, warn etc.
+            if (showErrorsInMainStream.includes(logLevel) && stream.stream === "main") {
                 streams.push({
                     level: 'error',
                     stream: streams[streams.length - 1].stream  // Reuse the same stream configuration

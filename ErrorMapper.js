@@ -92,9 +92,9 @@ class ErrorMapper {
     static async execute(req, res) {
         const logger = new Logger();
         // const config = logger.readConfig();
-        const { appName, stack, localLogs = false } = { ...req.body, ...req.query, ...req.params };
+        const { appName, stack } = { ...req.body, ...req.query, ...req.params };
         const remappedStack = this.reMapStackWithSourceCode(stack, 'source');
-        if (localLogs) {
+        if (logger.clienterror) {
             logger.clienterror({ err: { stack: remappedStack } }, "Client-side error: An issue occurred while processing the request.");
         } else {
             const logData = {
