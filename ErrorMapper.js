@@ -20,7 +20,8 @@ class ErrorMapper {
      */
     static async init({ filePath }) {
         const logger = new Logger();
-        if (!filePath) {
+        if (!fs.existsSync(filePath)) {
+            logger.warn("Script files are not available for loading the source map in the frontend build.");
             return;
         }
         try {
