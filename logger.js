@@ -58,11 +58,12 @@ class Logger {
         };
 
         const prettyPrintConfig = {
-            translateTime: 'SYS:yyyy-mm-dd h:MM:ss',
-            ignore: '',
             colorize: false,
             singleLine: false,
             levelFirst: false,
+            ignore: "pid,hostname",
+            translateTime: "SYS:h:MM:ss TT Z o",
+            messageFormat: "Message - {msg}",
             ...prettyPrint
         };
 
