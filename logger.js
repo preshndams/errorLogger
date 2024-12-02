@@ -3,7 +3,34 @@ import rfs from 'file-stream-rotator';
 import pino, { multistream } from 'pino';
 import pretty from 'pino-pretty';
 import { createWriteStream } from './pino-http-send.js';
+import { Transform } from "stream";
 import path from 'path';
+
+class PrettifyingRotatingStream extends Transform {
+    constructor(rotatingStream) {
+        super();
+        this.rotatingStream = rotatingStream;
+    }
+
+    _transform(chunk, encoding, callback) {
+        try {
+            const logObject = JSON.parse(chunk.toString());
+            const { level, time, pid, hostname, msg, ...rest } = logObject;
+            const timestamp = new Date(time).toTimeString();
+            let prettyLog = `${level} [${timestamp}]: Message - ${msg}`;
+            if (Object.keys(rest).length > 0) {
+                const formattedRest = JSON.stringify(rest, null, 4); // 4-space indentation
+                prettyLog += `\n\t${formattedRest}`;
+            }
+
+            prettyLog += "\n";
+            this.rotatingStream.write(prettyLog);
+            callback();
+        } catch (error) {
+            callback(error);
+        }
+    }
+}
 
 class Logger {
     static readConfig(configFiles) {
@@ -86,14 +113,10 @@ class Logger {
             }
 
             // Create a pretty stream for each log file stream
-            const logFileStream = rfs.getStream({ ...fileStreamConfigDefaults, ...stream });
+            const logFileStream = new PrettifyingRotatingStream(rfs.getStream({ ...fileStreamConfigDefaults, ...stream }));
             streams.push({
-                level: stream.stream === "error" ? stream.logLevel : logLevel, //Added this condition here to validate the other level like info, debug, warn etc in the main stream.
-                stream: pretty({
-                    ...prettyPrintConfig,
-                    destination: fs.createWriteStream(logFileStream.fs.path, { flags: 'a' }),  // File-based pretty logs
-                    customLevels
-                })
+                level: stream.stream === "main" ? logLevel : stream.logLevel, //Added this condition here to validate the other level like info, debug, warn etc in the main stream.
+                stream: logFileStream
             });
 
             //Including the errors in the main stream based on the other log level like info, debug, warn etc.
@@ -134,6 +157,11 @@ class Logger {
         const logger = pino({
             level: logLevel || 'info', // this MUST be set at the lowest level of the destination
             customLevels,
+            formatters: {
+                level: (label) => {
+                    return { level: label.toUpperCase() };
+                }
+            },
             mixin: loggingConfig.mixin
         }, multistream(streams, { dedupe: true, levels: { ...pino.levels, ...customLevels } }));
 
