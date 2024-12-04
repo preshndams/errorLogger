@@ -15,9 +15,28 @@ class PrettifyingRotatingStream extends Transform {
     _transform(chunk, encoding, callback) {
         try {
             const logObject = JSON.parse(chunk.toString());
-            const { level, time, pid, hostname, msg, ...rest } = logObject;
-            const timestamp = new Date(time).toTimeString();
-            let prettyLog = `${level} [${timestamp}]: Message - ${msg}`;
+            const { level, time, msg, ...rest } = logObject;
+
+            // Use Intl.DateTimeFormat to format time in 12-hour format with AM/PM
+            const formatter = new Intl.DateTimeFormat("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true, // Ensures 12-hour format with AM/PM
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone // Ensures local PC timezone
+            });
+
+            const formattedTime = formatter.format(new Date(time));
+
+            // Get the timezone abbreviation (e.g., IST, GMT)
+            const timeZoneName = Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+                .formatToParts(new Date(time))
+                .find(part => part.type === 'timeZoneName').value;
+
+            const timestamp = `${formattedTime} ${timeZoneName}`; // Combine time with timezone
+
+            let prettyLog = `${level.toUpperCase()} [${timestamp}]: Message - ${msg}`;
+
             if (Object.keys(rest).length > 0) {
                 const formattedRest = JSON.stringify(rest, null, 4); // 4-space indentation
                 prettyLog += `\n\t${formattedRest}`;
