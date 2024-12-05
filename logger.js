@@ -15,7 +15,7 @@ class PrettifyingRotatingStream extends Transform {
     _transform(chunk, encoding, callback) {
         try {
             const logObject = JSON.parse(chunk.toString());
-            const { level, time, msg, ...rest } = logObject;
+            const { level, time, pid, hostname, msg, ...rest } = logObject;
 
             // Use Intl.DateTimeFormat to format time in 12-hour format with AM/PM
             const formatter = new Intl.DateTimeFormat("en-US", {
