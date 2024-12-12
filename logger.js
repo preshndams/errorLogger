@@ -109,13 +109,13 @@ class Logger {
             config = Logger.readConfig(config);
         }
         const { httpConfig, loggingConfig, prettyPrintConfig } = this.createConfig(config);
-        const { logFolder, logStreams = [], customLevels, showErrorsInMainStream = [] } = loggingConfig;
-        const logLevel = loggingConfig.level || 'info';
+        const { logFolder, logStreams = [], customLevels, showErrorsInMainStream = [], max_logs = '10d' } = loggingConfig;
+        const logLevel = loggingConfig.logLevel || 'info';
         const streams = []
 
         const fileStreamConfigDefaults = {
             frequency: 'daily',
-            max_logs: '10d',
+            max_logs: max_logs,
             date_format: 'YYYY-MM-DD',
             size: null,
             extension: ".log",
