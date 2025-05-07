@@ -1,4 +1,3 @@
-// import config from './appConfig.js';
 import { SourceMapConsumer } from 'source-map-js';
 import fs from 'fs';
 import Logger from './logger.js';
@@ -9,14 +8,19 @@ class ErrorMapper {
     static _sourceMap = { source: null };
 
     /**
-     * Initializes the source map for the frontend build if a valid file path is provided.
-     * It reads the specified directory to find the source map file matching the pattern "main.*.js.map",
-     * loads its contents, and assigns the parsed JSON data to the `_sourceMap.source` property.
-     * Logs an error if reading the source mapping file fails.
+     * Initializes the source map by locating and loading a matching JavaScript or source map file
+     * from the specified directory based on the given file name.
      *
-     * @param {Object} options - The initialization options.
-     * @param {string} options.filePath - The path to the directory containing the source map file.
-     * @returns {Promise<void>} - Resolves with no return value; logs an error if any issues occur.
+     * The method looks for files matching the pattern:
+     * `${fileName}[.hash].js[.map]` (e.g., `main.js`, `main.123abc.js.map`, etc.)
+     *
+     * If a matching `.js.map` file is found, its contents are read and parsed into `_sourceMap.source`.
+     * If the directory does not exist or no matching file is found, it logs a warning.
+     *
+     * @param {Object} options - Options for initialization.
+     * @param {string} options.filePath - Absolute or relative path to the directory containing script files.
+     * @param {string} options.fileName - Base name of the file to match (e.g., 'main', 'index').
+     * @returns {Promise<void>} Resolves when the process is complete or aborted due to missing files.
      */
     static async init({ filePath }) {
         const logger = new Logger();
@@ -26,9 +30,7 @@ class ErrorMapper {
         }
         try {
             const files = await fs.promises.readdir(filePath);
-            const regex = /main\.\w+\.js\.map/;
-            const matchingFile = files.find(file => regex.test(file));
-
+            const matchingFile = files.find(file => file.endsWith('.js.map'));
             if (matchingFile) {
                 const fileData = await fs.promises.readFile(path.join(filePath, matchingFile), 'utf-8');
                 this._sourceMap.source = JSON.parse(fileData);
@@ -51,7 +53,6 @@ class ErrorMapper {
         if (!this._sourceMap[file]) {
             return stack;
         }
-
         let consumer;
         try {
             consumer = new SourceMapConsumer(this._sourceMap[file]);
@@ -90,23 +91,22 @@ class ErrorMapper {
      * @param {Object} res - The HTTP response object for sending back confirmation to the client.
      * @returns {boolean} - Returns true if the error was successfully logged.
      */
-    static async execute(req, res) {
-        const logger = new Logger();
-        // const config = logger.readConfig();
-        const { appName, stack, rawUrl } = { ...req.body, ...req.query, ...req.params };
+    static async execute(req, res, logger = new Logger()) {
+        const { appName = '', stack = '', rawUrl = '' } = { ...req.body, ...req.query, ...req.params };
         const remappedStack = this.reMapStackWithSourceCode(stack, 'source');
+    
         if (logger.clienterror) {
-            logger.clienterror({ err: { stack: remappedStack } }, "Client-side error: An issue occurred while processing the request.");
+            logger.clienterror({ err: { stack: remappedStack } }, 'Client-side error: An issue occurred while processing the request.');
         } else {
-            const logData = {
+            req.log.error({
                 req: { ...req, headers: req.headers, body: {} },
                 err: { stack: remappedStack },
-                machineName: appName.toLowerCase() || '',
+                machineName: appName.toLowerCase(),
                 rawUrl
-            };
-            req.log.error(logData);
+            });
             res.status(200).send('Mail Sent');
         }
+    
         return true;
     }
 }
